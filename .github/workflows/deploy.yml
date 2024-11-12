@@ -1,0 +1,32 @@
+name: Deploy to On-Prem Web Server
+
+on:
+  push:
+    branches:
+      - main  # Adjust if you want to deploy from a different branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up SSH key
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Deploy to On-Prem Web Server
+      run: |
+        # Ensure rsync is installed
+        sudo apt-get install -y rsync
+
+        # Sync the repository files to the on-prem server's /var/www/html directory
+        rsync -avz --exclude='.git*' ./ ubuntu@${{ secrets.SERVER_IP }}:/var/www/html/
+
+    - name: Restart Apache (or your web server)
+      run: |
+        ssh -i ~/.ssh/github_deploy_key ubuntu@${{ secrets.SERVER_IP }} "sudo systemctl restart apache2"
+
